@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GitHub Asset Browser</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#121a2d;--line:#26334d;--muted:#9aa9c2;--text:#eef4ff;--accent:#6d9cff;--green:#39c99a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,system-ui,Segoe UI,Arial,sans-serif}
+header{padding:28px 5vw 20px;border-bottom:1px solid var(--line);background:linear-gradient(120deg,#14213c,#10182a)}
+h1{margin:0 0 6px;font-size:clamp(24px,4vw,36px)}header p{margin:0;color:var(--muted)}
+main{max-width:1400px;margin:auto;padding:24px 5vw 60px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:18px}
+.formgrid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:12px}
+label{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+input{width:100%;background:#0b1222;border:1px solid var(--line);border-radius:9px;color:var(--text);padding:11px 12px;outline:none}
+input:focus{border-color:var(--accent)}button{border:0;border-radius:9px;padding:10px 14px;background:var(--accent);color:#071326;font-weight:700;cursor:pointer}
+button.secondary{background:#25344f;color:var(--text)}button.copy{background:#253b36;color:#9bf0cf;padding:7px 10px;font-size:12px}
+.actions{display:flex;gap:10px;align-items:end;margin-top:12px;flex-wrap:wrap}
+.help,.status{font-size:13px;color:var(--muted);margin-top:10px}.status.error{color:#ff9292}.status.ok{color:var(--green)}
+.toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:18px 0}
+.tabs{display:flex;gap:7px}.tab{background:#1b2942;color:var(--muted)}.tab.active{background:var(--accent);color:#071326}
+.toolbar input{max-width:340px;margin-left:auto}
+.stats{color:var(--muted);font-size:13px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px}
+.card{min-width:0;background:var(--panel);border:1px solid var(--line);border-radius:13px;overflow:hidden}
+.preview{height:155px;background:#0a1120;display:flex;align-items:center;justify-content:center;padding:12px}
+.preview img{max-width:100%;max-height:100%;object-fit:contain}
+.preview .fileicon{font-size:48px;color:#8ca5ce}
+.meta{padding:12px}.filename{font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.path{font-size:11px;color:var(--muted);overflow-wrap:anywhere;margin:4px 0 10px}
+.url{font-size:11px;color:#8ca5ce;overflow-wrap:anywhere;background:#0b1222;border-radius:7px;padding:7px;margin-bottom:9px;max-height:55px;overflow:hidden}
+.cardactions{display:flex;gap:7px;flex-wrap:wrap}.cardactions button{flex:1}
+.empty{padding:45px 15px;text-align:center;color:var(--muted);border:1px dashed var(--line);border-radius:14px}
+@media(max-width:760px){.formgrid{grid-template-columns:1fr}.toolbar input{max-width:none;width:100%;margin-left:0}.actions button{flex:1}}
+</style>
+</head>
+<body>
+<header><h1>GitHub Asset Browser</h1><p>Browse repository images and icons, preview them, and copy their direct raw URLs.</p></header>
+<main>
+<section class="panel">
+  <div class="formgrid">
+    <div><label for="repo">GitHub repository URL or owner/repo</label><input id="repo" placeholder="https://github.com/username/repository" value="https://github.com/rafsanrakibdskm75/Bdcaling-project"></div>
+    <div><label for="branch">Branch</label><input id="branch" value="main"></div>
+    <div><label for="imageFolder">Image folder</label><input id="imageFolder" value="assets/images"></div>
+  </div>
+  <div class="formgrid" style="margin-top:12px;grid-template-columns:1fr 1fr 1fr">
+    <div><label for="iconFolder">Icon folder</label><input id="iconFolder" value="assets/icons"></div>
+    <div><label for="token">GitHub token (optional; for private repos/rate limits)</label><input id="token" type="password" placeholder="ghp_..."></div>
+    <div class="actions" style="margin-top:0"><button id="loadBtn">Load assets</button><button class="secondary" id="clearBtn">Clear</button></div>
+  </div>
+  <div class="help">Public repositories work without a token. For a private repository, use a fine-grained token with read-only Contents access. The token is used only in this browser session and is not saved.</div>
+  <div id="status" class="status">Enter a repository and select Load assets.</div>
+</section>
+<div class="toolbar">
+  <div class="tabs">
+    <button class="tab active" data-tab="all">All</button>
+    <button class="tab" data-tab="images">Images</button>
+    <button class="tab" data-tab="icons">Icons</button>
+  </div>
+  <input id="search" placeholder="Search file name or path..." />
+  <span id="count" class="stats">0 files</span>
+</div>
+<div id="results" class="grid"><div class="empty">Your repository assets will appear here.</div></div>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+let assets = [], activeTab = "all";
+const imageExt = /\.(png|jpe?g|gif|webp|avif|bmp|ico|svg)$/i;
+const iconExt = /\.(svg|ico)$/i;
+function setStatus(message, type=""){ $("status").textContent=message; $("status").className="status "+type; }
+function parseRepo(value){
+  value=value.trim().replace(/\/+$/,"");
+  const match=value.match(/(?:github\.com\/)?([^/\s]+)\/([^/\s#?]+)(?:\.git)?(?:\/.*)?$/i);
+  if(!match) throw new Error("Enter a valid GitHub URL or owner/repo.");
+  return {owner:match[1],repo:match[2].replace(/\.git$/i,"")};
+}
+function rawUrl(owner,repo,branch,path){
+  return `https://raw.githubusercontent.com/${owner}/${repo}/${encodeURIComponent(branch)}/${path.split("/").map(encodeURIComponent).join("/")}`;
+}
+async function loadAssets(){
+  const btn=$("loadBtn"); btn.disabled=true; btn.textContent="Loading...";
+  try{
+    const {owner,repo}=parseRepo($("repo").value);
+    const branch=$("branch").value.trim()||"main";
+    const iconFolder=$("iconFolder").value.trim().replace(/^\/|\/$/g,"");
+    const imageFolder=$("imageFolder").value.trim().replace(/^\/|\/$/g,"");
+    const token=$("token").value.trim();
+    const headers={Accept:"application/vnd.github+json"}; if(token) headers.Authorization=`Bearer ${token}`;
+    setStatus("Connecting to GitHub and reading repository files...");
+    const repoRes=await fetch(`https://api.github.com/repos/${owner}/${repo}`,{headers});
+    if(!repoRes.ok) throw new Error(repoRes.status===404?"Repository/branch not found, or private repo access is missing.":`GitHub API error: ${repoRes.status}`);
+    const repoData=await repoRes.json();
+    const selectedBranch=branch||repoData.default_branch;
+    const treeRes=await fetch(`https://api.github.com/repos/${owner}/${repo}/git/trees/${encodeURIComponent(selectedBranch)}?recursive=1`,{headers});
+    if(!treeRes.ok) throw new Error(`Could not read branch "${selectedBranch}" (${treeRes.status}). Check the branch name and token permissions.`);
+    const tree=await treeRes.json();
+    const prefixes=[iconFolder,imageFolder].filter(Boolean);
+    assets=(tree.tree||[]).filter(item=>item.type==="blob"&&imageExt.test(item.path)&&prefixes.some(folder=>item.path.startsWith(folder+"/")))
+      .map(item=>({path:item.path,name:item.path.split("/").pop(),kind:item.path.startsWith(iconFolder+"/")?"icons":"images",url:rawUrl(owner,repo,selectedBranch,item.path)}))
+      .sort((a,b)=>a.path.localeCompare(b.path));
+    window.repoInfo={owner,repo,branch:selectedBranch};
+    setStatus(`${assets.length} image/icon file(s) found in ${owner}/${repo}.`+(tree.truncated?" GitHub marked this file tree as truncated; some files may be missing.":""),"ok");
+    render();
+  }catch(e){assets=[];render();setStatus(e.message,"error");}
+  finally{btn.disabled=false;btn.textContent="Load assets";}
+}
+function copyText(value,button){
+  navigator.clipboard.writeText(value).then(()=>{const old=button.textContent;button.textContent="Copied!";setTimeout(()=>button.textContent=old,1200);}).catch(()=>{prompt("Copy this URL:",value);});
+}
+function render(){
+  const query=$("search").value.toLowerCase().trim();
+  const shown=assets.filter(a=>(activeTab==="all"||a.kind===activeTab)&&(a.path.toLowerCase().includes(query)));
+  $("count").textContent=`${shown.length} / ${assets.length} files`;
+  if(!shown.length){$("results").innerHTML='<div class="empty">No matching image or icon files found.</div>';return;}
+  $("results").innerHTML=shown.map((a,i)=>`
+    <article class="card">
+      <div class="preview">${a.path.toLowerCase().endsWith(".svg")||imageExt.test(a.path)?`<img loading="lazy" src="${a.url}" alt="${escapeHtml(a.name)}" onerror="this.parentElement.innerHTML='<span class=&quot;fileicon&quot;>▧</span>'">`:'<span class="fileicon">▧</span>'}</div>
+      <div class="meta">
+        <div class="filename" title="${escapeHtml(a.name)}">${escapeHtml(a.name)}</div>
+        <div class="path">${escapeHtml(a.path)}</div>
+        <div class="url">${escapeHtml(a.url)}</div>
+        <div class="cardactions"><button class="copy" data-copy="${i}">Copy raw URL</button><button class="secondary" data-open="${i}">Open</button></div>
+      </div>
+    </article>`).join("");
+  $("results").querySelectorAll("[data-copy]").forEach(b=>b.addEventListener("click",()=>copyText(shown[+b.dataset.copy].url,b)));
+  $("results").querySelectorAll("[data-open]").forEach(b=>b.addEventListener("click",()=>window.open(shown[+b.dataset.open].url,"_blank","noopener")));
+}
+function escapeHtml(s){return s.replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
+$("loadBtn").addEventListener("click",loadAssets);
+$("clearBtn").addEventListener("click",()=>{$("repo").value="";$("token").value="";assets=[];render();setStatus("Cleared.");});
+$("search").addEventListener("input",render);
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{activeTab=b.dataset.tab;document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===b));render();}));
+</script>
+</body>
+</html>
