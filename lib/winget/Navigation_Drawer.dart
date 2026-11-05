@@ -17,10 +17,6 @@ class NavigationDrawer extends StatelessWidget {
         ),
       ),
         child: Scaffold(
-          child: Padding(
-            padding: EdgeInsetsGeometry.symmetric(horizontal: 17),
-          child: Column(),
-          ),
         ),
     );
   }
