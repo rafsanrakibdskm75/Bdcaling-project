@@ -14,7 +14,8 @@ class CardViewScreen extends StatelessWidget {
       },
       child: Container(
         width: double.infinity,
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(10),
+        margin: EdgeInsets.symmetric(vertical: 10),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),

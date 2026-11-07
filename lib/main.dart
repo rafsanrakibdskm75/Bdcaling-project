@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:untitled/winget/custom_text.dart';
 
 import 'Home/Login_screen.dart';
+import 'Home/cutom_text_testing.dart';
 import 'Home/home_screen.dart';
 
 void main() {
@@ -14,11 +16,12 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      debugShowCheckedModeBanner: false,
+      title: 'Flutter',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: HomeScreen(),
+      home: CutomTextTesting(),
     );
   }
 }

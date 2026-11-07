@@ -56,14 +56,25 @@ class HomeScreen extends StatelessWidget {
        'image':'https://raw.githubusercontent.com/rafsanrakibdskm75/Bdcaling-project/main/assets/image/music.jpg',
      },
    ];
+   List<Map<String, dynamic>> listfile = [
+     {
+       'image': 'https://mitchyh.com/images/posts/i-was-wrong-about-flutter-banner.png',
+       'title': 'Welcome to Our App',
+       'subtitle': 'Find Your Best Services Here',
+     },
+     {
+       'image': 'https://media2.dev.to/dynamic/image/width=1000,height=420,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fi%2Fw605r3q5eduhw5tqly08.png',
+       'title': 'Discover New Services',
+       'subtitle': 'Explore Our Categories',
+     },
+     {
+       'image': 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYPp8yNFFemJUG7IRBMFiPBg1rkubo1ttuRutORoJilkg-nAK2MFO5SnA&s=10',
+       'title': 'Book Your Service',
+       'subtitle': 'Make Your Moments Special',
+     },
+   ];
   @override
   Widget build(BuildContext context) {
-    List listfile= [
-      "https://mitchyh.com/images/posts/i-was-wrong-about-flutter-banner.png",
-      'https://media2.dev.to/dynamic/image/width=1000,height=420,fit=cover,gravity=auto,format=auto/https%3A%2F%2Fdev-to-uploads.s3.amazonaws.com%2Fi%2Fw605r3q5eduhw5tqly08.png',
-      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTYPp8yNFFemJUG7IRBMFiPBg1rkubo1ttuRutORoJilkg-nAK2MFO5SnA&s=10',
-
-    ];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -170,26 +181,80 @@ class HomeScreen extends StatelessWidget {
             //<------------------------ slider ------------------------------>
             CarouselSlider(
               options: CarouselOptions(
-                height: 100.0,
+                height: 150,
                 autoPlay: true,
-                autoPlayInterval: Duration(seconds: 1),),
-              items: listfile.map((image) {
+                autoPlayInterval: Duration(seconds: 3),
+                viewportFraction: 1,
+              ),
+
+              items: listfile.map((item) {
+
                 return Builder(
                   builder: (BuildContext context) {
+
                     return Container(
-                      width: MediaQuery.of(context).size.width - 20,
-                      height: 60,
-                      margin: const EdgeInsets.symmetric(horizontal: 5.0),
-                      decoration: BoxDecoration(
-                        color: Colors.amber,
-                        image: DecorationImage(
-                          image: NetworkImage(image),
-                          fit: BoxFit.cover,
+                      width: MediaQuery.of(context).size.width,
+                      margin: EdgeInsets.symmetric(horizontal: 5),
+
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+
+                        child: Stack(
+                          fit: StackFit.expand,
+
+                          children: [
+
+                            // Step 1: Background Image
+                            Image.network(
+                              item['image'],
+                              fit: BoxFit.cover,
+                            ),
+
+                            // Step 2: Dark Overlay
+                            Container(
+                              color: Colors.black.withOpacity(0.3),
+                            ),
+
+                            // Step 3: Custom Text
+                            Positioned(
+                              left: 20,
+                              bottom: 25,
+
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+
+                                children: [
+
+                                  Text(
+                                    item['title'],
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 20,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+
+                                  SizedBox(height: 5),
+
+                                  Text(
+                                    item['subtitle'],
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+
+                                ],
+                              ),
+                            ),
+
+                          ],
                         ),
                       ),
                     );
                   },
                 );
+
               }).toList(),
             ),
             //<-------------catagory----------------->
@@ -232,7 +297,7 @@ class HomeScreen extends StatelessWidget {
             //<------------------------ CardView ------------------------------>
             SizedBox(height: 20,),
           Container(
-            margin: const EdgeInsets.all(10),
+            margin: const EdgeInsets.all(8),
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: Colors.white,
